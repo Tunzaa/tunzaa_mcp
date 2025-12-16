@@ -42,6 +42,27 @@ To use this server with an MCP client like Claude Desktop, add the following to 
 }
 ```
 
+### remote usage
+
+```json
+{
+  "mcpServers": {
+    "tunzaa": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "github:whoisladleo/tunzaa-mcp"
+      ],
+      "env": {
+        "TUNZAA_API_KEY": "your_api_key",
+        "TUNZAA_SECRET_KEY": "your_secret_key",
+        "TUNZAA_ENVIRONMENT": "sandbox"
+      }
+    }
+  }
+}
+```
+
 Replace `/ABSOLUTE/PATH/TO/tunzaa_mcp` with the full path to this directory.
 
 ### Environment Variables
