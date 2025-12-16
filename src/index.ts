@@ -9,7 +9,6 @@ import {
     McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import axios, { AxiosInstance } from "axios";
-import { z } from "zod";
 
 const API_BASE_URL = "https://pay.tunzaa.co.tz";
 
@@ -21,6 +20,13 @@ const ENVIRONMENT = process.env.TUNZAA_ENVIRONMENT || "sandbox";
 if (!API_KEY || !SECRET_KEY) {
     console.error("Error: TUNZAA_API_KEY and TUNZAA_SECRET_KEY environment variables are required.");
     process.exit(1);
+}
+
+// Define interface for Token response
+interface TokenResponse {
+    access_token: string;
+    expires_in: number;
+    token_type: string;
 }
 
 class TunzaaServer {
@@ -54,6 +60,8 @@ class TunzaaServer {
 
         // Error handling
         this.server.onerror = (error) => console.error("[MCP Error]", error);
+
+        // Handle shutdown
         process.on("SIGINT", async () => {
             await this.server.close();
             process.exit(0);
@@ -65,7 +73,7 @@ class TunzaaServer {
             tools: [
                 {
                     name: "get_token",
-                    description: "Request an access token from Tunzaa API.",
+                    description: "Request an access token from Tunzaa API (Refreshes internal token).",
                     inputSchema: {
                         type: "object",
                         properties: {},
@@ -169,7 +177,7 @@ class TunzaaServer {
                             plan_id: { type: "number" },
                             updates: {
                                 type: "object",
-                                description: "Fields to update (customer, name, description, etc.) - same structure as create_installment",
+                                description: "Fields to update (customer, name, description, etc.)",
                             },
                         },
                         required: ["plan_id", "updates"],
@@ -196,25 +204,28 @@ class TunzaaServer {
             }
 
             try {
+                // Ensure arguments are not null
+                const args = request.params.arguments || {};
+
                 switch (request.params.name) {
                     case "get_token":
                         return await this.handleGetToken();
                     case "initiate_payment":
-                        return await this.handleInitiatePayment(request.params.arguments);
+                        return await this.handleInitiatePayment(args);
                     case "get_payment_status":
-                        return await this.handleGetPaymentStatus(request.params.arguments);
+                        return await this.handleGetPaymentStatus(args);
                     case "handle_callback":
-                        return await this.handleCallback(request.params.arguments);
+                        return await this.handleCallback(args);
                     case "create_installment":
-                        return await this.handleCreateInstallment(request.params.arguments);
+                        return await this.handleCreateInstallment(args);
                     case "list_installments":
-                        return await this.handleListInstallments(request.params.arguments);
+                        return await this.handleListInstallments(args);
                     case "get_installment_plan":
-                        return await this.handleGetInstallmentPlan(request.params.arguments);
+                        return await this.handleGetInstallmentPlan(args);
                     case "edit_installment_plan":
-                        return await this.handleEditInstallmentPlan(request.params.arguments);
+                        return await this.handleEditInstallmentPlan(args);
                     case "delete_installment_plan":
-                        return await this.handleDeleteInstallmentPlan(request.params.arguments);
+                        return await this.handleDeleteInstallmentPlan(args);
                     default:
                         throw new McpError(
                             ErrorCode.MethodNotFound,
@@ -224,11 +235,12 @@ class TunzaaServer {
             } catch (error: any) {
                 if (axios.isAxiosError(error)) {
                     const errorMessage = error.response?.data?.message || error.message;
+                    const errorDetails = JSON.stringify(error.response?.data || {});
                     return {
                         content: [
                             {
                                 type: "text",
-                                text: `API Error: ${errorMessage} (Status: ${error.response?.status})`,
+                                text: `API Error: ${errorMessage} (Status: ${error.response?.status})\nDetails: ${errorDetails}`,
                             },
                         ],
                         isError: true,
@@ -239,18 +251,17 @@ class TunzaaServer {
         });
     }
 
+    // --- Internal Helpers ---
+
     private async ensureToken() {
-        // Basic token caching logic
         if (this.token && this.tokenExpiry && Date.now() < this.tokenExpiry) {
             return;
         }
-        // Refresh token
-        const result = await this.handleGetToken();
-        // handleGetToken sets this.token internally if successful, but returns content to user.
-        // If it failed, it throws or returns error content.
+        // Refresh token internally
+        await this.fetchTokenInternal();
     }
 
-    private async handleGetToken() {
+    private async fetchTokenInternal(): Promise<TokenResponse> {
         try {
             const response = await axios.post(`${API_BASE_URL}/accounts/request/token`, {
                 api_key: API_KEY,
@@ -259,13 +270,11 @@ class TunzaaServer {
 
             const data = response.data;
             this.token = data.access_token;
-            // Set expiry a bit earlier than actual to be safe (e.g., minus 60s)
+            // Set expiry 60s early for safety buffer
             this.tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000;
-
-            return {
-                content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
-            };
+            return data;
         } catch (error: any) {
+            console.error("Token fetch failed:", error.message);
             throw new McpError(ErrorCode.InternalError, `Failed to get token: ${error.message}`);
         }
     }
@@ -273,7 +282,17 @@ class TunzaaServer {
     private getAuthHeaders() {
         return {
             Authorization: `Bearer ${this.token}`,
-            "X-Environment": "sandbox", // Make this configurable if needed
+            "X-Environment": ENVIRONMENT,
+        };
+    }
+
+    // --- Tool Handlers ---
+
+    private async handleGetToken() {
+        // Calls the internal fetcher and returns the result to the user
+        const data = await this.fetchTokenInternal();
+        return {
+            content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
         };
     }
 
@@ -295,12 +314,6 @@ class TunzaaServer {
     }
 
     private async handleCallback(args: any) {
-        // Since this is a server handling callbacks from Tunzaa, this tool primarily
-        // serves to "parse" or "validate" what a callback looks like for the user,
-        // or to verify a payload they received.
-
-        // In a real scenario, this server would listen on an HTTP endpoint.
-        // Here we just echo back that the payload is valid Tunzaa format.
         return {
             content: [
                 {
@@ -322,9 +335,11 @@ class TunzaaServer {
 
     private async handleListInstallments(args: any) {
         const { from = 0, limit = 20 } = args;
+        // Verify if your API requires POST or GET for listing. 
+        // Assuming POST based on your snippet, but often lists are GET.
         const response = await this.axiosInstance.post(
             `/installments?from=${from}&limit=${limit}`,
-            {}, // Body likely empty or filters? User example showed GET-like params but on POST
+            {},
             { headers: this.getAuthHeaders() }
         );
         return { content: [{ type: "text", text: JSON.stringify(response.data, null, 2) }] };

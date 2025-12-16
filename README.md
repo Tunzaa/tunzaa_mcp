@@ -33,8 +33,9 @@ To use this server with an MCP client like Claude Desktop, add the following to 
         "/ABSOLUTE/PATH/TO/tunzaa_mcp/dist/index.js"
       ],
       "env": {
-        "TUNZAA_API_KEY": "your_api_key_here",
-        "TUNZAA_SECRET_KEY": "your_secret_key_here"
+        "TUNZAA_API_KEY": "your_api_key",
+        "TUNZAA_SECRET_KEY": "your_secret_key",
+        "TUNZAA_ENVIRONMENT": "sandbox"
       }
     }
   }
