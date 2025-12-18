@@ -21,9 +21,25 @@ An MCP server to integrate Tunzaa payments into LLMs.
 
 ## Usage
 
-### Local Configuration (e.g., Claude Desktop)
+### Local Configuration (No Credentials - Mock Mode)
 
-To use this server with an MCP client like Claude Desktop, add the following to your configuration file (usually `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+To use the server in **Mock Mode** (returning static guidance data without live API calls), omit the environment variables:
+```json
+{
+  "mcpServers": {
+    "tunzaa": {
+      "command": "node",
+      "args": [
+        "/ABSOLUTE/PATH/TO/tunzaa_mcp/dist/index.js"
+      ]
+    }
+  }
+}
+```
+
+### Local Configuration (Live Mode)
+
+To enable live API interactions (e.g. for `create_demo_shop` to verify real payments), add your credentials:
 ```json
 {
   "mcpServers": {
@@ -42,7 +58,7 @@ To use this server with an MCP client like Claude Desktop, add the following to 
 }
 ```
 
-### remote usage
+### Remote Usage (npx)
 
 ```json
 {
@@ -52,12 +68,8 @@ To use this server with an MCP client like Claude Desktop, add the following to 
       "args": [
         "-y",
         "github:whoisladleo/tunzaa-mcp"
-      ],
-      "env": {
-        "TUNZAA_API_KEY": "your_api_key",
-        "TUNZAA_SECRET_KEY": "your_secret_key",
-        "TUNZAA_ENVIRONMENT": "sandbox"
-      }
+      ]
+      // Add "env" object here for Live Mode
     }
   }
 }

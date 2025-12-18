@@ -14,14 +14,14 @@ const API_KEY = process.env.TUNZAA_API_KEY;
 const SECRET_KEY = process.env.TUNZAA_SECRET_KEY;
 const ENVIRONMENT = process.env.TUNZAA_ENVIRONMENT || "sandbox";
 if (!API_KEY || !SECRET_KEY) {
-    console.error("Error: TUNZAA_API_KEY and TUNZAA_SECRET_KEY environment variables are required.");
-    process.exit(1);
+    console.warn("Notice: TUNZAA_API_KEY and/or TUNZAA_SECRET_KEY not found. Server running in MOCK MODE. Tools will return static example data.");
 }
 class TunzaaServer {
     server;
     axiosInstance;
     token = null;
     tokenExpiry = null;
+    isMockMode = !API_KEY || !SECRET_KEY;
     constructor() {
         this.server = new index_js_1.Server({
             name: "tunzaa-mcp-server",
@@ -48,11 +48,12 @@ class TunzaaServer {
         });
     }
     setupToolHandlers() {
+        // ... (Tool definitions remain unchanged) ...
         this.server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => ({
             tools: [
                 {
                     name: "impliment_get_token",
-                    description: "Impliment get access token from Tunzaa API (Refreshes internal token). Endpoint: POST /accounts/request/token. This tool will create the necessary API integration to get the access token.",
+                    description: "Impliment get access token from Tunzaa API (Refreshes internal token). Endpoint: POST /accounts/request/token. Required Header: 'X-Environment: sandbox' (or 'live'). This tool will create the necessary API integration to get the access token.",
                     inputSchema: {
                         type: "object",
                         properties: {},
@@ -60,7 +61,7 @@ class TunzaaServer {
                 },
                 {
                     name: "impliment_initiate_payment",
-                    description: "Impliment initiate payment from Tunzaa API (Refreshes internal token). Endpoint: POST /payments/initiate-payment. This tool will create the necessary API integration to initiate a payment request (M-Pesa, etc.) via Tunzaa.",
+                    description: "Impliment initiate payment from Tunzaa API (Refreshes internal token). Endpoint: POST /payments/initiate-payment. Required Header: 'X-Environment: sandbox' (or 'live'). This tool will create the necessary API integration to initiate a payment request (M-Pesa, etc.) via Tunzaa.",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -73,7 +74,7 @@ class TunzaaServer {
                 },
                 {
                     name: "impliment_get_payment_status",
-                    description: "Impliment get payment status from Tunzaa API (Refreshes internal token). Endpoint: GET /payments/check-status/:transactionID. This tool will create the necessary API integration to check the status of a payment transaction.",
+                    description: "Impliment get payment status from Tunzaa API (Refreshes internal token). Endpoint: GET /payments/check-status/:transactionID. Required Header: 'X-Environment: sandbox' (or 'live'). This tool will create the necessary API integration to check the status of a payment transaction.",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -100,7 +101,7 @@ class TunzaaServer {
                 },
                 {
                     name: "impliment_create_installment",
-                    description: "Impliment create installment from Tunzaa API (Refreshes internal token). Endpoint: POST /installments/create. This tool will create the necessary API integration to create a new installment plan.",
+                    description: "Impliment create installment from Tunzaa API (Refreshes internal token). Endpoint: POST /installments/create. Required Header: 'X-Environment: sandbox' (or 'live'). This tool will create the necessary API integration to create a new installment plan.",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -112,7 +113,7 @@ class TunzaaServer {
                                     phone: { type: "string" },
                                     address: { type: "string" },
                                 },
-                                required: ["first_name", "last_name", "phone"],
+                                required: ["first_name", "last_name", "phone", "address"],
                             },
                             name: { type: "string", description: "Plan name (e.g., 'Samsung S20')" },
                             description: { type: "string" },
@@ -122,12 +123,12 @@ class TunzaaServer {
                             end_date: { type: "string", description: "YYYY-MM-DD" },
                             custom_interval: { type: "number", description: "Days between payments if frequency is 'custom'" },
                         },
-                        required: ["customer", "name", "total_amount", "payment_frequency", "start_date", "end_date"],
+                        required: ["customer", "name", "total_amount", "payment_frequency", "start_date", "end_date", "description"],
                     },
                 },
                 {
                     name: "impliment_list_installments",
-                    description: "Impliment list installments from Tunzaa API (Refreshes internal token). Endpoint: POST /installments (with query params). This tool will create the necessary API integration to list installment plans with pagination.",
+                    description: "Impliment list installments from Tunzaa API (Refreshes internal token). Endpoint: POST /installments (with query params). Required Header: 'X-Environment: sandbox' (or 'live'). This tool will create the necessary API integration to list installment plans with pagination.",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -138,7 +139,7 @@ class TunzaaServer {
                 },
                 {
                     name: "impliment_get_installment_plan",
-                    description: "Impliment get installment plan from Tunzaa API (Refreshes internal token). Endpoint: GET /installments/:plan_id. This tool will create the necessary API integration to get details of a specific installment plan.",
+                    description: "Impliment get installment plan from Tunzaa API (Refreshes internal token). Endpoint: GET /installments/:plan_id. Required Header: 'X-Environment: sandbox' (or 'live'). This tool will create the necessary API integration to get details of a specific installment plan.",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -149,7 +150,7 @@ class TunzaaServer {
                 },
                 {
                     name: "impliment_edit_installment_plan",
-                    description: "Impliment edit installment plan from Tunzaa API (Refreshes internal token). Endpoint: PUT /installments/:plan_id/update. This tool will create the necessary API integration to update an existing installment plan.",
+                    description: "Impliment edit installment plan from Tunzaa API (Refreshes internal token). Endpoint: PUT /installments/:plan_id/update. Required Header: 'X-Environment: sandbox' (or 'live'). This tool will create the necessary API integration to update an existing installment plan.",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -164,7 +165,7 @@ class TunzaaServer {
                 },
                 {
                     name: "impliment_delete_installment_plan",
-                    description: "Impliment delete installment plan from Tunzaa API (Refreshes internal token). Endpoint: DELETE /installments/:plan_id/cancel. This tool will create the necessary API integration to cancel/delete an installment plan.",
+                    description: "Impliment delete installment plan from Tunzaa API (Refreshes internal token). Endpoint: DELETE /installments/:plan_id/cancel. Required Header: 'X-Environment: sandbox' (or 'live'). This tool will create the necessary API integration to cancel/delete an installment plan.",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -174,32 +175,18 @@ class TunzaaServer {
                     },
                 },
                 {
-                    name: "simulate_tunzaa_shop_integration",
-                    description: "Runs a full integration simulation for a Tunzaa-powered shop. Executes a sequence of API calls (Get Token -> Initiate Payment -> List Installments -> Create Installment) using mock data to verify the payment gateway integration flow and API connectivity.",
+                    name: "create_demo_shop",
+                    description: "Create a demo shop with full Tunzaa integration. Initializes a sample integration environment and verifies connectivity by running a full sequence of API operations (Token -> Payment -> Installments) using the server's configured credentials. This 'live trace' allows an Agent to inspect real-time API responses (grounding) and generate correct, non-hallucinated client code.",
                     inputSchema: {
                         type: "object",
-                        properties: {
-                            name: { type: "string" },
-                            description: { type: "string" },
-                            api_key: { type: "string" },
-                            api_secret: { type: "string" },
-                            api_url: { type: "string", description: "The base URL for the API endpoint (e.g., https://pay.tunzaa.co.tz). Note: This URL works with production keys. You can also supply a sandbox or dev URL." },
-                        },
-                        required: ["name", "description", "api_key", "api_secret", "api_url"],
+                        properties: {},
                     },
                 }
             ],
         }));
         this.server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
             // Ensure we have a valid token for non-auth requests
-            // We need to check against the actual tool names now
-            if (request.params.name !== "impliment_get_token" && request.params.name !== "impliment_handle_callback" && request.params.name !== "simulate_tunzaa_shop_integration") {
-                // We pass undefined address here as we can't easily extract it without parsing args first, 
-                // but args is parsed below. 
-                // Ideally create_demo_shop handles its own token, and others use the default or cached one.
-                // If specific address is needed, the tool handler will call ensureToken again with address if needed (but currently ensureToken guards against unnecessary calls).
-                // However, without args, we can't pass address here. 
-                // Attempt to extract args loosely if possible? 
+            if (request.params.name !== "impliment_get_token" && request.params.name !== "impliment_handle_callback" && request.params.name !== "create_demo_shop") {
                 const args = request.params.arguments || {};
                 await this.ensureToken(args.address);
             }
@@ -225,7 +212,7 @@ class TunzaaServer {
                         return await this.handleEditInstallmentPlan(args);
                     case "impliment_delete_installment_plan":
                         return await this.handleDeleteInstallmentPlan(args);
-                    case "simulate_tunzaa_shop_integration":
+                    case "create_demo_shop":
                         return await this.handleCreateDemoShop(args);
                     default:
                         throw new types_js_1.McpError(types_js_1.ErrorCode.MethodNotFound, `Unknown tool: ${request.params.name}`);
@@ -251,6 +238,8 @@ class TunzaaServer {
     }
     // --- Internal Helpers ---
     async ensureToken(address) {
+        if (this.isMockMode)
+            return; // Skip token check in mock mode
         if (this.token && this.tokenExpiry && Date.now() < this.tokenExpiry) {
             return;
         }
@@ -258,6 +247,15 @@ class TunzaaServer {
         await this.fetchTokenInternal(address);
     }
     async fetchTokenInternal(address) {
+        if (this.isMockMode) {
+            const mockToken = {
+                access_token: "MOCK_ACCESS_TOKEN_XYZ",
+                expires_in: 3600,
+                token_type: "Bearer"
+            };
+            this.token = mockToken.access_token;
+            return mockToken;
+        }
         try {
             const baseURL = address || API_BASE_URL;
             const response = await axios_1.default.post(`${baseURL}/accounts/request/token`, {
@@ -282,6 +280,8 @@ class TunzaaServer {
         };
     }
     getAxiosInstance(address) {
+        // In Mock Mode, we still return an instance, but handlers will bypass usage if they check isMockMode first.
+        // Or we can intercept here if we wanted complex mocking, but simplistic handler interception is easier.
         if (address) {
             return axios_1.default.create({
                 baseURL: address,
@@ -295,19 +295,41 @@ class TunzaaServer {
     }
     // --- Tool Handlers ---
     async handleGetToken(args) {
-        // Calls the internal fetcher and returns the result to the user
         const data = await this.fetchTokenInternal(args?.address);
         return {
             content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
         };
     }
     async handleInitiatePayment(args) {
+        if (this.isMockMode) {
+            return {
+                content: [{
+                        type: "text", text: JSON.stringify({
+                            statusCode: 202,
+                            success: true,
+                            message: "Payment request accepted and being processed (MOCK)",
+                            transactionID: "MOCK_TXN_12345"
+                        }, null, 2)
+                    }]
+            };
+        }
         const instance = this.getAxiosInstance(args.address);
         const { address, ...data } = args;
         const response = await instance.post("/payments/initiate-payment", data, { headers: this.getAuthHeaders() });
         return { content: [{ type: "text", text: JSON.stringify(response.data, null, 2) }] };
     }
     async handleGetPaymentStatus(args) {
+        if (this.isMockMode) {
+            return {
+                content: [{
+                        type: "text", text: JSON.stringify({
+                            transactionID: args.transactionID,
+                            status: "COMPLETED",
+                            message: "Transaction successful (MOCK)"
+                        }, null, 2)
+                    }]
+            };
+        }
         const instance = this.getAxiosInstance(args.address);
         const response = await instance.get(`/payments/check-status/${args.transactionID}`, { headers: this.getAuthHeaders() });
         return { content: [{ type: "text", text: JSON.stringify(response.data, null, 2) }] };
@@ -323,35 +345,98 @@ class TunzaaServer {
         };
     }
     async handleCreateInstallment(args) {
+        if (this.isMockMode) {
+            return {
+                content: [{
+                        type: "text", text: JSON.stringify({
+                            message: "Installment plan created successfully (MOCK)",
+                            plan_id: 1001,
+                            status: "active",
+                            next_payment_date: args.start_date,
+                            installments: [
+                                { installment_number: 1, amount: args.total_amount / 2, due_date: args.start_date, status: "PENDING" },
+                                { installment_number: 2, amount: args.total_amount / 2, due_date: args.end_date, status: "PENDING" }
+                            ]
+                        }, null, 2)
+                    }]
+            };
+        }
         const instance = this.getAxiosInstance(args.address);
         const { address, ...data } = args;
         const response = await instance.post("/installments/create", data, { headers: this.getAuthHeaders() });
         return { content: [{ type: "text", text: JSON.stringify(response.data, null, 2) }] };
     }
     async handleListInstallments(args) {
+        if (this.isMockMode) {
+            return {
+                content: [{
+                        type: "text", text: JSON.stringify([
+                            {
+                                plan_id: 1001,
+                                name: "Samsung S20 Mock Plan",
+                                total_amount: "500000",
+                                remaining_balance: "250000",
+                                status: "active"
+                            }
+                        ], null, 2)
+                    }]
+            };
+        }
         const { from = 0, limit = 20, address } = args;
         const instance = this.getAxiosInstance(address);
         const response = await instance.post(`/installments?from=${from}&limit=${limit}`, {}, { headers: this.getAuthHeaders() });
         return { content: [{ type: "text", text: JSON.stringify(response.data, null, 2) }] };
     }
     async handleGetInstallmentPlan(args) {
+        if (this.isMockMode) {
+            return {
+                content: [{
+                        type: "text", text: JSON.stringify({
+                            plan_id: args.plan_id,
+                            name: "Mock Plan Details",
+                            status: "active"
+                        }, null, 2)
+                    }]
+            };
+        }
         const instance = this.getAxiosInstance(args.address);
         const response = await instance.get(`/installments/${args.plan_id}`, { headers: this.getAuthHeaders() });
         return { content: [{ type: "text", text: JSON.stringify(response.data, null, 2) }] };
     }
     async handleEditInstallmentPlan(args) {
+        if (this.isMockMode) {
+            return {
+                content: [{
+                        type: "text", text: JSON.stringify({
+                            plan_id: args.plan_id,
+                            message: "Plan updated successfully (MOCK)"
+                        }, null, 2)
+                    }]
+            };
+        }
         const instance = this.getAxiosInstance(args.address);
         const response = await instance.put(`/installments/${args.plan_id}/update`, args.updates, { headers: this.getAuthHeaders() });
         return { content: [{ type: "text", text: JSON.stringify(response.data, null, 2) }] };
     }
     async handleDeleteInstallmentPlan(args) {
+        if (this.isMockMode) {
+            return {
+                content: [{
+                        type: "text", text: JSON.stringify({
+                            plan_id: args.plan_id,
+                            message: "Plan deleted successfully (MOCK)",
+                            status: "cancelled"
+                        }, null, 2)
+                    }]
+            };
+        }
         const instance = this.getAxiosInstance(args.address);
         const response = await instance.delete(`/installments/${args.plan_id}/cancel`, { headers: this.getAuthHeaders() });
         return { content: [{ type: "text", text: JSON.stringify(response.data, null, 2) }] };
     }
     async handleCreateDemoShop(args) {
         const results = [];
-        const address = args.api_url; // Map api_url to address
+        const address = args.api_url || API_BASE_URL; // Use provided URL or default to env/constant
         // 1. Get Token
         try {
             results.push({ step: "Get Token", result: await this.handleGetToken({ address }) });
@@ -388,9 +473,11 @@ class TunzaaServer {
             customer: {
                 first_name: "John",
                 last_name: "Doe",
-                phone: "0744550667"
+                phone: "0744550667",
+                address: "Dar es Salaam"
             },
             name: "Demo Plan " + Date.now(),
+            description: "Demo Shop Payment Plan",
             total_amount: 10000,
             payment_frequency: "monthly",
             start_date: new Date().toISOString().split('T')[0],
