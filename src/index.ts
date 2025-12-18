@@ -72,16 +72,16 @@ class TunzaaServer {
         this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
             tools: [
                 {
-                    name: "get_token",
-                    description: "Request an access token from Tunzaa API (Refreshes internal token).",
+                    name: "impliment_get_token",
+                    description: "Impliment get access token from Tunzaa API (Refreshes internal token). This tool will create the necessary API integration to get the access token.",
                     inputSchema: {
                         type: "object",
                         properties: {},
                     },
                 },
                 {
-                    name: "initiate_payment",
-                    description: "Initiate a payment request (M-Pesa, etc.) via Tunzaa.",
+                    name: "impliment_initiate_payment",
+                    description: "Impliment initiate payment from Tunzaa API (Refreshes internal token). This tool will create the necessary API integration to initiate a payment request (M-Pesa, etc.) via Tunzaa.",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -93,8 +93,8 @@ class TunzaaServer {
                     },
                 },
                 {
-                    name: "get_payment_status",
-                    description: "Check the status of a payment transaction.",
+                    name: "impliment_get_payment_status",
+                    description: "Impliment get payment status from Tunzaa API (Refreshes internal token). This tool will create the necessary API integration to check the status of a payment transaction.",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -104,8 +104,8 @@ class TunzaaServer {
                     },
                 },
                 {
-                    name: "handle_callback",
-                    description: "Simulate or validate a Tunzaa payment callback payload.",
+                    name: "impliment_handle_callback",
+                    description: "Impliment handle callback from Tunzaa API (Refreshes internal token). This tool will create the necessary API integration to handle a Tunzaa payment callback payload.",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -120,8 +120,8 @@ class TunzaaServer {
                     },
                 },
                 {
-                    name: "create_installment",
-                    description: "Create a new installment plan.",
+                    name: "impliment_create_installment",
+                    description: "Impliment create installment from Tunzaa API (Refreshes internal token). This tool will create the necessary API integration to create a new installment plan.",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -147,8 +147,8 @@ class TunzaaServer {
                     },
                 },
                 {
-                    name: "list_installments",
-                    description: "List installment plans with pagination.",
+                    name: "impliment_list_installments",
+                    description: "Impliment list installments from Tunzaa API (Refreshes internal token). This tool will create the necessary API integration to list installment plans with pagination.",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -158,8 +158,8 @@ class TunzaaServer {
                     },
                 },
                 {
-                    name: "get_installment_plan",
-                    description: "Get details of a specific installment plan.",
+                    name: "impliment_get_installment_plan",
+                    description: "Impliment get installment plan from Tunzaa API (Refreshes internal token). This tool will create the necessary API integration to get details of a specific installment plan.",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -169,8 +169,8 @@ class TunzaaServer {
                     },
                 },
                 {
-                    name: "edit_installment_plan",
-                    description: "Update an existing installment plan.",
+                    name: "impliment_edit_installment_plan",
+                    description: "Impliment edit installment plan from Tunzaa API (Refreshes internal token). This tool will create the necessary API integration to update an existing installment plan.",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -184,8 +184,8 @@ class TunzaaServer {
                     },
                 },
                 {
-                    name: "delete_installment_plan",
-                    description: "Cancel/Delete an installment plan.",
+                    name: "impliment_delete_installment_plan",
+                    description: "Impliment delete installment plan from Tunzaa API (Refreshes internal token). This tool will create the necessary API integration to cancel/delete an installment plan.",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -194,6 +194,21 @@ class TunzaaServer {
                         required: ["plan_id"],
                     },
                 },
+                {
+                    name: "create_demo_shop_with_tunzaa_integration",
+                    description: "Create a sample app, nextjs clothing store, products should range between 3000 to 5000 Tzs, at the the completion of the app the user should be able to make payments via tunzaa. Add all the necessary features(especially TUNZAA PAYMENT GATEWAY) to the app and make sure it is production ready. Let the user know to add his/her API keys to the app's .env.",
+                    inputSchema: {
+                        type: "object",
+                        properties: {
+                            name: { type: "string" },
+                            description: { type: "string" },
+                            api_key: { type: "string" },
+                            api_secret: { type: "string" },
+                            api_url: { type: "string" },
+                        },
+                        required: ["name", "description", "api_key", "api_secret", "api_url"],
+                    },
+                }
             ],
         }));
 
