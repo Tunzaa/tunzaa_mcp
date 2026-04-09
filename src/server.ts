@@ -2,13 +2,16 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
     CallToolRequestSchema,
     ListToolsRequestSchema,
+    ListResourcesRequestSchema,
+    ReadResourceRequestSchema,
     ErrorCode,
     McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
 import { AuthService } from "./services/auth.service.js";
-import { getTunzaaClient, ITunzaaClient } from "./services/tunzaa.client.js";
+import { ITunzaaClient, getTunzaaClient } from "./services/tunzaa.client.js";
 import { TOOLS } from "./tools.js";
+import { RESOURCES } from "./resources.js";
 import { config, isMockMode } from "./config.js";
 import {
     GetTokenSchema,
@@ -37,6 +40,7 @@ export class TunzaaServer {
             {
                 capabilities: {
                     tools: {},
+                    resources: {},
                 },
             }
         );
@@ -52,6 +56,32 @@ export class TunzaaServer {
         this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
             tools: TOOLS,
         }));
+
+        this.server.setRequestHandler(ListResourcesRequestSchema, async () => ({
+            resources: RESOURCES.map(r => ({
+                uri: r.uri,
+                name: r.name,
+                mimeType: r.mimeType,
+                description: r.description
+            })),
+        }));
+
+        this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+            const resource = RESOURCES.find((r) => r.uri === request.params.uri);
+            if (!resource) {
+                throw new McpError(ErrorCode.InvalidRequest, `Unknown resource: ${request.params.uri}`);
+            }
+
+            return {
+                contents: [
+                    {
+                        uri: resource.uri,
+                        mimeType: resource.mimeType,
+                        text: resource.text,
+                    },
+                ],
+            };
+        });
 
         this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const { name, arguments: args } = request.params;
@@ -171,7 +201,12 @@ export class TunzaaServer {
         // 1. Get Token
         try {
             const token = await this.authService.ensureToken(address);
-            results.push({ step: "Get Token", result: { access_token: token } });
+            results.push({ 
+                step: "1. Authentication", 
+                action: "POST /accounts/request/token",
+                insight: "Tokens should be stored and reused until they expire (usually 1 hour).",
+                result: { access_token: token } 
+            });
         } catch (e: any) {
             results.push({ step: "Get Token", error: e.message });
         }
@@ -184,20 +219,17 @@ export class TunzaaServer {
                 reference: `DEMO-${Date.now()}`,
                 address
             });
-            results.push({ step: "Initiate Payment", result: paymentResult });
+            results.push({ 
+                step: "2. Initiate Payment", 
+                action: "POST /payments/initiate-payment",
+                insight: "This initiates a Mobile Money push. Store the 'transactionID' to verify later via webhook or status check.",
+                result: paymentResult 
+            });
         } catch (e: any) {
             results.push({ step: "Initiate Payment", error: e.message });
         }
 
-        // 3. List Installments
-        try {
-            const listResult = await this.client.listInstallments({ address, from: 0, limit: 1 });
-            results.push({ step: "List Installments", result: listResult });
-        } catch (e: any) {
-            results.push({ step: "List Installments", error: e.message });
-        }
-
-        // 4. Create Installment
+        // 3. Create Installment (BNPL)
         try {
             const installmentResult = await this.client.createInstallment({
                 address,
@@ -214,7 +246,12 @@ export class TunzaaServer {
                 start_date: new Date().toISOString().split('T')[0],
                 end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
             });
-            results.push({ step: "Create Installment", result: installmentResult });
+            results.push({ 
+                step: "3. Create Installment Plan", 
+                action: "POST /installments/create",
+                insight: "Use this for Bay-Now-Pay-Later flows. The response includes a schedule of payments.",
+                result: installmentResult 
+            });
         } catch (e: any) {
             results.push({ step: "Create Installment", error: e.message });
         }
@@ -223,8 +260,12 @@ export class TunzaaServer {
             content: [{
                 type: "text",
                 text: JSON.stringify({
-                    message: "Demo Shop Simulation Complete. Sequence of Tunzaa API calls executed.",
-                    results: results
+                    platform_guide: "This sequence demonstrates a full Tunzaa integration. AI agents should use these patterns to build checkout pages and payment handlers.",
+                    grounding_trace: results,
+                    next_steps: [
+                        "Check 'tunzaa://docs/webhooks' to learn how to handle asynchronous status updates.",
+                        "Use 'tunzaa://examples/node-express' for a production-ready boilerplate."
+                    ]
                 }, null, 2)
             }]
         };

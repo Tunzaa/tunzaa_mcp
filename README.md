@@ -2,15 +2,11 @@
 
 **Grounding for AI-Driven Payment Integrations**
 
-The Tunzaa MCP Server is a developer-centric tool designed to help you integrate Tunzaa Payments into your applications. It provides high-fidelity grounding data that allows AI agents to generate perfect, non-hallucinated integration code, boilerplate, and webhook handlers for the Tunzaa ecosystem.
+The Tunzaa MCP Server is a developer-centric tool built for the community. It provides high-fidelity grounding data, integrated documentation, and "Golden" code patterns that allow AI agents (vibe coders) to generate perfect, non-hallucinated integration code for the Tunzaa ecosystem.
 
 ## 🚀 Instant Start (Fastest Way)
 
-You can run the server directly from GitHub without cloning or installing dependencies. Simply use the configuration for your editor below.
-
----
-
-## 🛠️ Setup by Editor
+You can run the server directly from GitHub without cloning or installing dependencies. 
 
 ### 1. Claude Desktop
 Add this to your `claude_desktop_config.json`:
@@ -31,9 +27,7 @@ Add this to your `claude_desktop_config.json`:
 ### 2. Cursor
 1. Go to **Settings -> Features -> MCP**.
 2. Click **+ Add New MCP Server**.
-3. Name: `Tunzaa`
-4. Type: `command`
-5. Value: `npx -y github:Tunzaa/tunzaa_mcp`
+3. Name: `Tunzaa` | Type: `command` | Value: `npx -y github:Tunzaa/tunzaa_mcp`
 
 ### 3. Windsurf
 Add this to your `~/.codeium/config.json`:
@@ -49,23 +43,43 @@ Add this to your `~/.codeium/config.json`:
 }
 ```
 
-### 4. Antigravity (Coding Assistant)
-Antigravity can automatically detect and use this server if you are working within this repository, or you can point it to the GitHub URL directly for grounding during a session.
+---
 
-### 5. Generic (Other MCP Clients)
-For any other MCP-compatible client, the execution command is:
-`npx -y github:Tunzaa/tunzaa_mcp`
+## 🧭 The Vibe Coding Workflow
+
+This server is designed to help you build Tunzaa integrations in minutes. Follow this flow with your AI assistant:
+
+1. **Grounding**: Add this MCP server to your project.
+2. **Exploration**: Ask the AI: *"List the Tunzaa resources and read the authentication guide."*
+3. **Simulation**: Run the tool: `create_demo_shop` to see a live trace of a successful integration.
+4. **Generation**: Ask the AI: *"Based on the grounding trace and the node-express example, build a checkout page for my app."*
 
 ---
 
-## Features
+## 🏪 The Grounding "Demo Shop"
 
-- **Vibe Coder Optimized**: Built to help AI agents understand and implement Tunzaa APIs correctly without needing live credentials.
-- **Mock Mode by Default**: Generates "Golden" mock data that matches the real Tunzaa API structure.
-- **Zero Configuration**: Get up and running in seconds with the `npx` method.
-- **Live Mode (Optional)**: Support for real-time verification against the Tunzaa Sandbox/Production.
+The `create_demo_shop` tool is the cornerstone of this platform. It doesn't just return data; it provides a **Live Grounding Trace**.
 
-## Usage (Live Mode)
+### How to use it:
+1. **Trigger the Simulation**: Tell your AI agent: *"Run the Tunzaa create_demo_shop tool to understand the payment flow."*
+2. **Review the Trace**: The agent will receive a chronological sequence of calls including Authentication, Payment Initiation, and Installment creation.
+3. **Production Implementation**: Each step in the trace contains "Grounding Insights" that teach the agent how to handle state, headers, and reference IDs in your actual code.
+4. **Boilerplate**: Ask the agent to *"Convert the grounding trace into a [Node/Python/PHP] implementation using the best practices found in the documentation resources."*
+
+---
+
+## ✨ Features
+
+- **Integrated Documentation**: AI agents can "read" guides on Auth, Payments, and Webhooks directly through MCP Resources.
+- **Golden Patterns**: Embedded code snippets for Express.js, React Hooks, and more.
+- **Vibe Coder Optimized**: Rich schema descriptions and instructional traces (via `create_demo_shop`) ensure zero hallucination.
+- **Mock Mode by Default**: Generates "Golden" mock data matching the real Tunzaa API structure.
+- **Live Mode (Optional)**: Real-time verification against the Tunzaa Sandbox/Production.
+
+---
+
+## 🛠️ Usage (Live Mode)
+
 To have the AI verify **real data** from your Tunzaa account (e.g., checking transaction statuses), add your credentials to the `env` block in your config:
 
 ```json
@@ -76,8 +90,12 @@ To have the AI verify **real data** from your Tunzaa account (e.g., checking tra
 }
 ```
 
-## Local Development (Cloning)
+---
+
+## 🏗️ Local Development
+
 If you'd like to contribute or modify the server:
+
 1. `git clone https://github.com/Tunzaa/tunzaa_mcp.git`
 2. `cd tunzaa_mcp && pnpm install && pnpm run build`
 3. Use the local path in your config: `"args": ["/ABSOLUTE/PATH/TO/tunzaa_mcp/dist/index.js"]`
