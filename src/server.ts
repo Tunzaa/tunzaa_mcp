@@ -26,7 +26,7 @@ import {
     CreateDemoShopSchema
 } from "./schemas.js";
 
-export class TunzaaServer {
+export class MalipoServer {
     private server: Server;
     private authService: AuthService;
     private client: ITunzaaClient;
@@ -34,7 +34,7 @@ export class TunzaaServer {
     constructor() {
         this.server = new Server(
             {
-                name: "tunzaa-mcp-server",
+                name: "malipo-mcp-server",
                 version: "1.0.0",
             },
             {
@@ -164,8 +164,25 @@ export class TunzaaServer {
     }
 
     private async handleCallback(args: any) {
+        const lines = [
+            "Received Callback Simulation:",
+            `Status: ${args.status}`,
+            `Transaction: ${args.transaction_id}`,
+            `Reference: ${args.reference_id || "N/A"}`,
+            `Amount: ${args.amount || "N/A"}`,
+        ];
+
+        if (args.x_signature) {
+            lines.push(`X-Signature: ${args.x_signature}`);
+            lines.push("");
+            lines.push("Note: In production, verify the signature against the RAW request body using HMAC-SHA256 with your secret_key before trusting the payload.");
+        } else {
+            lines.push("");
+            lines.push("Note: No X-Signature provided. Production callbacks from Malipo include an HMAC-SHA256 signature in the X-Signature header.");
+        }
+
         return {
-            content: [{ type: "text", text: `Received Callback Simulation:\nStatus: ${args.status}\nTransaction: ${args.transaction_id}\n\nPayload Validated.` }]
+            content: [{ type: "text", text: lines.join("\n") }]
         };
     }
 
@@ -214,7 +231,7 @@ export class TunzaaServer {
         // 2. Initiate Payment
         try {
             const paymentResult = await this.client.initiatePayment({
-                customer_msisdn: "0744550667",
+                customer_msisdn: "255700000000",
                 amount: "5000",
                 reference: `DEMO-${Date.now()}`,
                 address
@@ -236,7 +253,7 @@ export class TunzaaServer {
                 customer: {
                     first_name: "John",
                     last_name: "Doe",
-                    phone: "0744550667",
+                    phone: "255700000000",
                     address: "Dar es Salaam"
                 },
                 name: "Demo Plan " + Date.now(),
@@ -249,7 +266,7 @@ export class TunzaaServer {
             results.push({ 
                 step: "3. Create Installment Plan", 
                 action: "POST /installments/create",
-                insight: "Use this for Bay-Now-Pay-Later flows. The response includes a schedule of payments.",
+                insight: "Use this for Buy-Now-Pay-Later flows. The response includes the created customer, plan summary, and generated installment schedule.",
                 result: installmentResult 
             });
         } catch (e: any) {
@@ -260,11 +277,11 @@ export class TunzaaServer {
             content: [{
                 type: "text",
                 text: JSON.stringify({
-                    platform_guide: "This sequence demonstrates a full Tunzaa integration. AI agents should use these patterns to build checkout pages and payment handlers.",
+                    platform_guide: "This sequence demonstrates a full Malipo integration. AI agents should use these patterns to build checkout pages and payment handlers.",
                     grounding_trace: results,
                     next_steps: [
-                        "Check 'tunzaa://docs/webhooks' to learn how to handle asynchronous status updates.",
-                        "Use 'tunzaa://examples/node-express' for a production-ready boilerplate."
+                        "Check 'malipo://docs/webhooks' to learn how to handle asynchronous status updates.",
+                        "Use 'malipo://examples/node-express' for a production-ready boilerplate."
                     ]
                 }, null, 2)
             }]
@@ -273,6 +290,6 @@ export class TunzaaServer {
 
     async run(transport: any) {
         await this.server.connect(transport);
-        console.error("Tunzaa MCP Server running on stdio");
+        console.error("Malipo MCP Server running on stdio");
     }
 }

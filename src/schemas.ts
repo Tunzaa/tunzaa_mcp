@@ -1,13 +1,14 @@
 import { z } from "zod";
 
 export const GetTokenSchema = z.object({
-  address: z.string().optional().describe("Optional override for the Tunzaa API base URL."),
+  address: z.string().optional().describe("Optional override for the Malipo API base URL."),
 });
 
 export const InitiatePaymentSchema = z.object({
-  customer_msisdn: z.string().describe("Customer phone number in local format (e.g., 0744550667). Essential for Mobile Money push."),
+  customer_msisdn: z.string().describe("Customer phone number in international format without '+' (e.g., 255700000000). Essential for Mobile Money push."),
   amount: z.string().describe("Transaction amount as a string to avoid precision issues (e.g., '5000')."),
   reference: z.string().describe("Unique order reference from your system. Used to match callbacks."),
+  sandbox_scenario: z.enum(["success", "failure"]).optional().describe("In sandbox mode, forces the outcome of the payment push. Maps to the X-Sandbox-Scenario header."),
   address: z.string().optional().describe("Optional override for API base URL."),
 });
 
@@ -17,12 +18,13 @@ export const GetPaymentStatusSchema = z.object({
 });
 
 export const HandleCallbackSchema = z.object({
-  transaction_id: z.string().describe("The unique Tunzaa transaction ID sent in the webhook."),
+  transaction_id: z.string().describe("The unique Malipo transaction ID sent in the webhook."),
   status: z.string().describe("The final status of the payment (e.g., 'COMPLETED', 'FAILED', 'CANCELLED')."),
   reference_id: z.string().optional().describe("Your system's unique order reference."),
-  amount: z.string().optional().describe("The amount confirmed by the provider."),
-  payment_date: z.string().optional().describe("The date the payment was completed."),
-  timestamp: z.string().optional().describe("UNIX timestamp of the event."),
+  amount: z.string().optional().describe("The amount confirmed by the provider as a decimal string (e.g., '1500.00')."),
+  payment_date: z.string().optional().describe("The date and time the payment was completed, e.g. '2024-11-25 14:30:45'."),
+  timestamp: z.string().optional().describe("The event datetime as a string, e.g. '2024-11-25 16:45:10'."),
+  x_signature: z.string().optional().describe("The X-Signature header value. HMAC-SHA256 of the raw payload using your API secret key."),
 });
 
 export const CreateInstallmentSchema = z.object({
@@ -43,13 +45,14 @@ export const CreateInstallmentSchema = z.object({
 });
 
 export const ListInstallmentsSchema = z.object({
-  from: z.number().default(0).describe("Starting index for pagination."),
-  limit: z.number().default(20).describe("Number of plans to return per page."),
+  from: z.number().optional().describe("Starting index for pagination (sent as query parameter)."),
+  limit: z.number().optional().describe("Number of plans to return per page (sent as query parameter)."),
   address: z.string().optional(),
 });
 
 export const GetInstallmentPlanSchema = z.object({
   plan_id: z.number().describe("The unique numeric ID of the installment plan."),
+  include_payments: z.boolean().optional().describe("Append ?include_payments=true to also receive completed payment history and progress totals."),
   address: z.string().optional(),
 });
 
@@ -65,5 +68,5 @@ export const DeleteInstallmentPlanSchema = z.object({
 });
 
 export const CreateDemoShopSchema = z.object({
-  api_url: z.string().optional().describe("Optional URL to simulate the Tunzaa environment for grounding."),
+  api_url: z.string().optional().describe("Optional URL to simulate the Malipo environment for grounding."),
 });

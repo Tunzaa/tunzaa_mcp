@@ -3,12 +3,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateDemoShopSchema = exports.DeleteInstallmentPlanSchema = exports.EditInstallmentPlanSchema = exports.GetInstallmentPlanSchema = exports.ListInstallmentsSchema = exports.CreateInstallmentSchema = exports.HandleCallbackSchema = exports.GetPaymentStatusSchema = exports.InitiatePaymentSchema = exports.GetTokenSchema = void 0;
 const zod_1 = require("zod");
 exports.GetTokenSchema = zod_1.z.object({
-    address: zod_1.z.string().optional().describe("Optional override for the Tunzaa API base URL."),
+    address: zod_1.z.string().optional().describe("Optional override for the Malipo API base URL."),
 });
 exports.InitiatePaymentSchema = zod_1.z.object({
-    customer_msisdn: zod_1.z.string().describe("Customer phone number in local format (e.g., 0744550667). Essential for Mobile Money push."),
+    customer_msisdn: zod_1.z.string().describe("Customer phone number in international format without '+' (e.g., 255700000000). Essential for Mobile Money push."),
     amount: zod_1.z.string().describe("Transaction amount as a string to avoid precision issues (e.g., '5000')."),
     reference: zod_1.z.string().describe("Unique order reference from your system. Used to match callbacks."),
+    sandbox_scenario: zod_1.z.enum(["success", "failure"]).optional().describe("In sandbox mode, forces the outcome of the payment push. Maps to the X-Sandbox-Scenario header."),
     address: zod_1.z.string().optional().describe("Optional override for API base URL."),
 });
 exports.GetPaymentStatusSchema = zod_1.z.object({
@@ -16,12 +17,13 @@ exports.GetPaymentStatusSchema = zod_1.z.object({
     address: zod_1.z.string().optional(),
 });
 exports.HandleCallbackSchema = zod_1.z.object({
-    transaction_id: zod_1.z.string().describe("The unique Tunzaa transaction ID sent in the webhook."),
+    transaction_id: zod_1.z.string().describe("The unique Malipo transaction ID sent in the webhook."),
     status: zod_1.z.string().describe("The final status of the payment (e.g., 'COMPLETED', 'FAILED', 'CANCELLED')."),
     reference_id: zod_1.z.string().optional().describe("Your system's unique order reference."),
-    amount: zod_1.z.string().optional().describe("The amount confirmed by the provider."),
-    payment_date: zod_1.z.string().optional().describe("The date the payment was completed."),
-    timestamp: zod_1.z.string().optional().describe("UNIX timestamp of the event."),
+    amount: zod_1.z.string().optional().describe("The amount confirmed by the provider as a decimal string (e.g., '1500.00')."),
+    payment_date: zod_1.z.string().optional().describe("The date and time the payment was completed, e.g. '2024-11-25 14:30:45'."),
+    timestamp: zod_1.z.string().optional().describe("The event datetime as a string, e.g. '2024-11-25 16:45:10'."),
+    x_signature: zod_1.z.string().optional().describe("The X-Signature header value. HMAC-SHA256 of the raw payload using your API secret key."),
 });
 exports.CreateInstallmentSchema = zod_1.z.object({
     customer: zod_1.z.object({
@@ -40,12 +42,13 @@ exports.CreateInstallmentSchema = zod_1.z.object({
     address: zod_1.z.string().optional(),
 });
 exports.ListInstallmentsSchema = zod_1.z.object({
-    from: zod_1.z.number().default(0).describe("Starting index for pagination."),
-    limit: zod_1.z.number().default(20).describe("Number of plans to return per page."),
+    from: zod_1.z.number().optional().describe("Starting index for pagination (sent as query parameter)."),
+    limit: zod_1.z.number().optional().describe("Number of plans to return per page (sent as query parameter)."),
     address: zod_1.z.string().optional(),
 });
 exports.GetInstallmentPlanSchema = zod_1.z.object({
     plan_id: zod_1.z.number().describe("The unique numeric ID of the installment plan."),
+    include_payments: zod_1.z.boolean().optional().describe("Append ?include_payments=true to also receive completed payment history and progress totals."),
     address: zod_1.z.string().optional(),
 });
 exports.EditInstallmentPlanSchema = zod_1.z.object({
@@ -58,5 +61,5 @@ exports.DeleteInstallmentPlanSchema = zod_1.z.object({
     address: zod_1.z.string().optional(),
 });
 exports.CreateDemoShopSchema = zod_1.z.object({
-    api_url: zod_1.z.string().optional().describe("Optional URL to simulate the Tunzaa environment for grounding."),
+    api_url: zod_1.z.string().optional().describe("Optional URL to simulate the Malipo environment for grounding."),
 });

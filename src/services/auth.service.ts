@@ -32,7 +32,12 @@ export class AuthService {
             const response = await axios.post(`${baseURL}/accounts/request/token`, {
                 api_key: config.API_KEY,
                 secret_key: config.SECRET_KEY,
-            }, { headers: { 'Content-Type': 'application/json' } });
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Environment': config.ENVIRONMENT,
+                }
+            });
 
             const data = response.data;
             this.token = data.access_token;

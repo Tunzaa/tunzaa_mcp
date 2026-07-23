@@ -8,6 +8,7 @@ export interface PaymentRequest {
     customer_msisdn: string;
     amount: string;
     reference: string;
+    sandbox_scenario?: "success" | "failure";
     address?: string;
 }
 
@@ -23,6 +24,7 @@ export interface CallbackPayload {
     amount?: string;
     payment_date?: string;
     timestamp?: string;
+    x_signature?: string;
 }
 
 export interface InstallmentCustomer {
@@ -52,6 +54,7 @@ export interface ListInstallmentsRequest {
 
 export interface GetInstallmentRequest {
     plan_id: number;
+    include_payments?: boolean;
     address?: string;
 }
 

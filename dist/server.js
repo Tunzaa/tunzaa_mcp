@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TunzaaServer = void 0;
+exports.MalipoServer = void 0;
 const index_js_1 = require("@modelcontextprotocol/sdk/server/index.js");
 const types_js_1 = require("@modelcontextprotocol/sdk/types.js");
 const axios_1 = __importDefault(require("axios"));
@@ -13,13 +13,13 @@ const tools_js_1 = require("./tools.js");
 const resources_js_1 = require("./resources.js");
 const config_js_1 = require("./config.js");
 const schemas_js_1 = require("./schemas.js");
-class TunzaaServer {
+class MalipoServer {
     server;
     authService;
     client;
     constructor() {
         this.server = new index_js_1.Server({
-            name: "tunzaa-mcp-server",
+            name: "malipo-mcp-server",
             version: "1.0.0",
         }, {
             capabilities: {
@@ -132,8 +132,24 @@ class TunzaaServer {
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
     async handleCallback(args) {
+        const lines = [
+            "Received Callback Simulation:",
+            `Status: ${args.status}`,
+            `Transaction: ${args.transaction_id}`,
+            `Reference: ${args.reference_id || "N/A"}`,
+            `Amount: ${args.amount || "N/A"}`,
+        ];
+        if (args.x_signature) {
+            lines.push(`X-Signature: ${args.x_signature}`);
+            lines.push("");
+            lines.push("Note: In production, verify the signature against the RAW request body using HMAC-SHA256 with your secret_key before trusting the payload.");
+        }
+        else {
+            lines.push("");
+            lines.push("Note: No X-Signature provided. Production callbacks from Malipo include an HMAC-SHA256 signature in the X-Signature header.");
+        }
         return {
-            content: [{ type: "text", text: `Received Callback Simulation:\nStatus: ${args.status}\nTransaction: ${args.transaction_id}\n\nPayload Validated.` }]
+            content: [{ type: "text", text: lines.join("\n") }]
         };
     }
     async handleCreateInstallment(args) {
@@ -175,7 +191,7 @@ class TunzaaServer {
         // 2. Initiate Payment
         try {
             const paymentResult = await this.client.initiatePayment({
-                customer_msisdn: "0744550667",
+                customer_msisdn: "255700000000",
                 amount: "5000",
                 reference: `DEMO-${Date.now()}`,
                 address
@@ -197,7 +213,7 @@ class TunzaaServer {
                 customer: {
                     first_name: "John",
                     last_name: "Doe",
-                    phone: "0744550667",
+                    phone: "255700000000",
                     address: "Dar es Salaam"
                 },
                 name: "Demo Plan " + Date.now(),
@@ -210,7 +226,7 @@ class TunzaaServer {
             results.push({
                 step: "3. Create Installment Plan",
                 action: "POST /installments/create",
-                insight: "Use this for Bay-Now-Pay-Later flows. The response includes a schedule of payments.",
+                insight: "Use this for Buy-Now-Pay-Later flows. The response includes the created customer, plan summary, and generated installment schedule.",
                 result: installmentResult
             });
         }
@@ -221,11 +237,11 @@ class TunzaaServer {
             content: [{
                     type: "text",
                     text: JSON.stringify({
-                        platform_guide: "This sequence demonstrates a full Tunzaa integration. AI agents should use these patterns to build checkout pages and payment handlers.",
+                        platform_guide: "This sequence demonstrates a full Malipo integration. AI agents should use these patterns to build checkout pages and payment handlers.",
                         grounding_trace: results,
                         next_steps: [
-                            "Check 'tunzaa://docs/webhooks' to learn how to handle asynchronous status updates.",
-                            "Use 'tunzaa://examples/node-express' for a production-ready boilerplate."
+                            "Check 'malipo://docs/webhooks' to learn how to handle asynchronous status updates.",
+                            "Use 'malipo://examples/node-express' for a production-ready boilerplate."
                         ]
                     }, null, 2)
                 }]
@@ -233,7 +249,7 @@ class TunzaaServer {
     }
     async run(transport) {
         await this.server.connect(transport);
-        console.error("Tunzaa MCP Server running on stdio");
+        console.error("Malipo MCP Server running on stdio");
     }
 }
-exports.TunzaaServer = TunzaaServer;
+exports.MalipoServer = MalipoServer;

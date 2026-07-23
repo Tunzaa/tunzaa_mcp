@@ -32,7 +32,12 @@ class AuthService {
             const response = await axios_1.default.post(`${baseURL}/accounts/request/token`, {
                 api_key: config_js_1.config.API_KEY,
                 secret_key: config_js_1.config.SECRET_KEY,
-            }, { headers: { 'Content-Type': 'application/json' } });
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Environment': config_js_1.config.ENVIRONMENT,
+                }
+            });
             const data = response.data;
             this.token = data.access_token;
             // Set expiry 60s early for safety buffer

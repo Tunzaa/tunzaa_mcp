@@ -1,5 +1,5 @@
 {
-  "name": "tunzaa_mcp",
+  "name": "malipo_mcp",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -8,13 +8,15 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
+    "malipo",
+    "malipo-ai",
+    "malipo-by-tunzaa",
     "tunzaa",
-    "tunzaa-ai",
     "vibe code payments"
   ],
   "author": "Denis Rwelamila",
   "license": "ISC",
-  "description": "",
+  "description": "Malipo MCP server — AI grounding for the Malipo by Tunzaa payment and BNPL API.",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.0",
     "axios": "^1.13.2",
@@ -26,7 +28,7 @@
     "typescript": "^5.9.3"
   },
   "bin": {
-    "tunzaa-mcp": "./dist/index.js"
+    "malipo-mcp": "./dist/index.js"
   },
   "files": [
     "dist"

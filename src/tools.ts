@@ -16,12 +16,12 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 export const TOOLS: Tool[] = [
     {
         name: "get_token",
-        description: "Retrieve a Tunzaa access token. Refreshes internal token automatically. Use this to verify your API credentials and see the internal token structure.",
+        description: "Retrieve a Malipo API access token. Refreshes internal token automatically. Use this to verify your API credentials and see the internal token structure.",
         inputSchema: zodToJsonSchema(GetTokenSchema) as any,
     },
     {
         name: "initiate_payment",
-        description: "Initiate a payment request (M-Pesa, etc.) via Tunzaa. Call this to inspect the response structure needed to implement mobile money flows in your local code.",
+        description: "Initiate a payment request (M-Pesa, etc.) via Malipo API. Call this to inspect the response structure needed to implement mobile money flows in your local code.",
         inputSchema: zodToJsonSchema(InitiatePaymentSchema) as any,
     },
     {
@@ -31,7 +31,7 @@ export const TOOLS: Tool[] = [
     },
     {
         name: "handle_callback",
-        description: "Simulate or handle the callback payload sent by Tunzaa to your webhook. Essential for grounding your webhook integration code with real payload examples.",
+        description: "Simulate or handle the callback payload sent by Malipo to your webhook. Essential for grounding your webhook integration code with real payload examples.",
         inputSchema: zodToJsonSchema(HandleCallbackSchema) as any,
     },
     {
@@ -41,7 +41,7 @@ export const TOOLS: Tool[] = [
     },
     {
         name: "list_installments",
-        description: "List existing installment plans. Use this to see how pagination and plan summaries are returned by the Tunzaa API.",
+        description: "List existing installment plans. Use this to see how pagination and plan summaries are returned by the Malipo API.",
         inputSchema: zodToJsonSchema(ListInstallmentsSchema) as any,
     },
     {
@@ -51,7 +51,7 @@ export const TOOLS: Tool[] = [
     },
     {
         name: "edit_installment_plan",
-        description: "Update an existing installment plan. Use this to understand which fields are mutable via the Tunzaa API.",
+        description: "Update an existing installment plan. Use this to understand which fields are mutable via the Malipo API.",
         inputSchema: zodToJsonSchema(EditInstallmentPlanSchema) as any,
     },
     {
@@ -61,7 +61,7 @@ export const TOOLS: Tool[] = [
     },
     {
         name: "create_demo_shop",
-        description: "The ultimate grounding tool. Executes a full sequence of Tunzaa API calls (Token -> Payment -> Installments). Use this to see a 'live trace' of the API, allowing you to generate perfect integration code.",
+        description: "The ultimate grounding tool. Executes a full sequence of Malipo API calls (Token -> Payment -> Installments). Use this to see a 'live trace' of the API, allowing you to generate perfect integration code.",
         inputSchema: zodToJsonSchema(CreateDemoShopSchema) as any,
     }
 ];
