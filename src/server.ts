@@ -8,6 +8,7 @@ import {
     McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
+import { createHmac } from "crypto";
 import { AuthService } from "./services/auth.service.js";
 import { ITunzaaClient, getTunzaaClient } from "./services/tunzaa.client.js";
 import { TOOLS } from "./tools.js";
@@ -163,19 +164,67 @@ export class MalipoServer {
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
 
+    private canonicalJson(obj: unknown): string {
+        if (obj === null || typeof obj !== "object") {
+            return JSON.stringify(obj);
+        }
+        if (Array.isArray(obj)) {
+            return "[" + obj.map(item => this.canonicalJson(item)).join(",") + "]";
+        }
+        const sortedObj: Record<string, unknown> = {};
+        for (const key of Object.keys(obj as Record<string, unknown>).sort()) {
+            sortedObj[key] = (obj as Record<string, unknown>)[key];
+        }
+        const pairs = Object.entries(sortedObj).map(
+            ([key, value]) => `${JSON.stringify(key)}: ${this.canonicalJson(value)}`
+        );
+        return "{" + pairs.join(", ") + "}";
+    }
+
     private async handleCallback(args: any) {
+        const payload = {
+            transaction_id: args.transaction_id,
+            status: args.status,
+            reference_id: args.reference_id,
+            amount: args.amount,
+            payment_date: args.payment_date,
+            timestamp: args.timestamp,
+        };
+
+        // Drop undefined fields so the canonical JSON matches Malipo's payload.
+        const cleanPayload: Record<string, string> = {};
+        for (const [key, value] of Object.entries(payload)) {
+            if (value !== undefined) cleanPayload[key] = value as string;
+        }
+
+        const canonicalBody = this.canonicalJson(cleanPayload);
+
         const lines = [
             "Received Callback Simulation:",
             `Status: ${args.status}`,
             `Transaction: ${args.transaction_id}`,
             `Reference: ${args.reference_id || "N/A"}`,
             `Amount: ${args.amount || "N/A"}`,
+            "",
+            "Canonical payload used for HMAC verification:",
+            canonicalBody,
         ];
 
         if (args.x_signature) {
-            lines.push(`X-Signature: ${args.x_signature}`);
             lines.push("");
-            lines.push("Note: In production, verify the signature against the RAW request body using HMAC-SHA256 with your secret_key before trusting the payload.");
+            lines.push(`X-Signature: ${args.x_signature}`);
+
+            if (config.SECRET_KEY) {
+                const expected = createHmac("sha256", config.SECRET_KEY)
+                    .update(canonicalBody)
+                    .digest("hex");
+                const valid = expected === args.x_signature;
+                lines.push(`Expected signature: ${expected}`);
+                lines.push(`Signature valid: ${valid}`);
+            } else {
+                lines.push("");
+                lines.push("Note: Set MALIPO_SECRET_KEY to verify the signature live. The verification should match because Malipo signs the JSON payload with alphabetically sorted keys (Python json.dumps(payload, sort_keys=True) format).");
+            }
         } else {
             lines.push("");
             lines.push("Note: No X-Signature provided. Production callbacks from Malipo include an HMAC-SHA256 signature in the X-Signature header.");

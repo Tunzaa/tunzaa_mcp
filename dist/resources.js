@@ -58,7 +58,7 @@ All subsequent requests must include the token in the \`Authorization\` header a
 Webhooks are the recommended way to track payment completion. Malipo sends a \`POST\` request to your configured callback URL when a transaction reaches a final state.
 
 ## 1. Webhook Headers
-The callback includes an \`X-Signature\` header containing an HMAC-SHA256 signature of the payload using your API secret key.
+The callback includes an \`X-Signature\` header containing an HMAC-SHA256 signature of the payload using the **API secret key for the transaction's environment** (sandbox or production).
 
 \`\`\`json
 {
@@ -79,9 +79,24 @@ The callback includes an \`X-Signature\` header containing an HMAC-SHA256 signat
 }
 \`\`\`
 
-## 3. Implementation Strategy
+## 3. Signature Verification
+Malipo signs the **JSON payload with alphabetically sorted keys**.
+
+The signed string looks exactly like this (spaces after colons and commas, no extra whitespace at the start or end):
+
+\`\`\`text
+{"amount": "1500.00", "payment_date": "2024-11-25 14:30:45", "reference_id": "REF12345", "status": "COMPLETED", "timestamp": "2024-11-25 16:45:10", "transaction_id": "TXNVV3BHMU"}
+\`\`\`
+
+To verify:
+1. Parse the raw request body as JSON.
+2. Re-serialize it with keys sorted alphabetically and the same spacing (equivalent to Python's \`json.dumps(payload, sort_keys=True)\`).
+3. Compute \`HMAC-SHA256(canonicalPayload, MALIPO_SECRET_KEY)\`.
+4. Compare the hex digest to the \`X-Signature\` header.
+
+## 4. Implementation Strategy
 1. **Endpoint**: Create a public \`POST\` endpoint (e.g., \`/api/malipo/callback\`).
-2. **Signature verification**: Compute HMAC-SHA256 of the raw payload with your \`secret_key\` and compare it to the \`X-Signature\` header.
+2. **Signature verification**: Compute HMAC-SHA256 of the alphabetically sorted JSON payload with your \`secret_key\` and compare it to the \`X-Signature\` header.
 3. **Idempotency**: Always check your database to see if the \`transaction_id\` has already been processed to avoid duplicate fulfillment.
 4. **Response**: Return a \`200 OK\` quickly. If you fail to respond, Malipo may retry the callback up to 5 times.`
     },
@@ -141,16 +156,28 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     return res.status(400).send('Missing signature');
   }
 
+  // Malipo signs the JSON payload with alphabetically sorted keys.
+  // Equivalent to Python's json.dumps(payload, sort_keys=True).
+  function canonicalJson(obj) {
+    if (obj === null || typeof obj !== 'object') return JSON.stringify(obj);
+    if (Array.isArray(obj)) return '[' + obj.map(canonicalJson).join(',') + ']';
+    const sortedKeys = Object.keys(obj).sort();
+    const pairs = sortedKeys.map(key => JSON.stringify(key) + ': ' + canonicalJson(obj[key]));
+    return '{' + pairs.join(', ') + '}';
+  }
+
+  const payload = JSON.parse(rawBody);
+  const canonicalBody = canonicalJson(payload);
+
   const expected = crypto
     .createHmac('sha256', process.env.MALIPO_SECRET_KEY)
-    .update(rawBody)
+    .update(canonicalBody)
     .digest('hex');
 
   if (signature !== expected) {
     return res.status(401).send('Invalid signature');
   }
 
-  const payload = JSON.parse(rawBody);
   const { transaction_id, status, reference_id } = payload;
 
   console.log(\`Received Malipo payment [\${status}] for order \${reference_id}\`);

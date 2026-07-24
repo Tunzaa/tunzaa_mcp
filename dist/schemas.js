@@ -23,7 +23,7 @@ exports.HandleCallbackSchema = zod_1.z.object({
     amount: zod_1.z.string().optional().describe("The amount confirmed by the provider as a decimal string (e.g., '1500.00')."),
     payment_date: zod_1.z.string().optional().describe("The date and time the payment was completed, e.g. '2024-11-25 14:30:45'."),
     timestamp: zod_1.z.string().optional().describe("The event datetime as a string, e.g. '2024-11-25 16:45:10'."),
-    x_signature: zod_1.z.string().optional().describe("The X-Signature header value. HMAC-SHA256 of the raw payload using your API secret key."),
+    x_signature: zod_1.z.string().optional().describe("The X-Signature header value. HMAC-SHA256 of the JSON payload with alphabetically sorted keys (Python json.dumps(payload, sort_keys=True) format) using your API secret key."),
 });
 exports.CreateInstallmentSchema = zod_1.z.object({
     customer: zod_1.z.object({
