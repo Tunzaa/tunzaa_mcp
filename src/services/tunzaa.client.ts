@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 import { config, isMockMode } from "../config.js";
 import { AuthService } from "./auth.service.js";
+import { resolveBaseUrl } from "../security.js";
 import {
     PaymentRequest,
     PaymentStatusRequest,
@@ -39,7 +40,7 @@ export class LiveTunzaaClient implements ITunzaaClient {
 
     private getAxiosInstance(address?: string): AxiosInstance {
         return axios.create({
-            baseURL: address || config.API_BASE_URL,
+            baseURL: resolveBaseUrl(address),
         });
     }
 

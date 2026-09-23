@@ -92,7 +92,7 @@ To verify:
 1. Parse the raw request body as JSON.
 2. Re-serialize it with keys sorted alphabetically and the same spacing (equivalent to Python's \`json.dumps(payload, sort_keys=True)\`).
 3. Compute \`HMAC-SHA256(canonicalPayload, MALIPO_SECRET_KEY)\`.
-4. Compare the hex digest to the \`X-Signature\` header.
+4. Compare the hex digest to the \`X-Signature\` header using a constant-time comparison (e.g. Node's \`crypto.timingSafeEqual\`).
 
 ## 4. Implementation Strategy
 1. **Endpoint**: Create a public \`POST\` endpoint (e.g., \`/api/malipo/callback\`).
@@ -174,7 +174,10 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     .update(canonicalBody)
     .digest('hex');
 
-  if (signature !== expected) {
+  const expectedBuf = Buffer.from(expected, 'utf8');
+  const signatureBuf = Buffer.from(String(signature), 'utf8');
+  // Constant-time comparison; timingSafeEqual throws if lengths differ.
+  if (expectedBuf.length !== signatureBuf.length || !crypto.timingSafeEqual(expectedBuf, signatureBuf)) {
     return res.status(401).send('Invalid signature');
   }
 

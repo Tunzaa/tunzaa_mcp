@@ -92,6 +92,16 @@ To have the AI verify **real data** from your Malipo account (e.g., checking tra
 
 > Legacy `TUNZAA_*` environment variables are still accepted as a fallback.
 
+### Optional settings
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `MALIPO_API_BASE_URL` | `https://pay.tunzaa.co.tz` | API host. Sandbox and production share this host and are selected by `MALIPO_ENVIRONMENT`. |
+| `MALIPO_ALLOWED_HOSTS` | _(empty)_ | Comma-separated extra hosts that the tools' `address` / `api_url` override may target, e.g. `staging.example.com,localhost:8000`. Overrides must use HTTPS (plain HTTP only for localhost). Any other host is rejected before a request is made. |
+| `MALIPO_EXPOSE_TOKEN` | `false` | `get_token` returns a masked token (`eyJh…x9Q`) and its expiry. Set to `true` to return the full bearer token. |
+
+`create_demo_shop` initiates a real payment and creates a real installment plan, so it only runs when `MALIPO_ENVIRONMENT=sandbox` (or in mock mode).
+
 ---
 
 ## 🏗️ Local Development
