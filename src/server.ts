@@ -8,12 +8,13 @@ import {
     McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 import { AuthService } from "./services/auth.service.js";
 import { ITunzaaClient, getTunzaaClient } from "./services/tunzaa.client.js";
 import { TOOLS } from "./tools.js";
 import { RESOURCES } from "./resources.js";
-import { config, isMockMode } from "./config.js";
+import { config, isMockMode, isSandbox } from "./config.js";
+import { displayToken, resolveBaseUrl } from "./security.js";
 import {
     GetTokenSchema,
     InitiatePaymentSchema,
@@ -36,7 +37,7 @@ export class MalipoServer {
         this.server = new Server(
             {
                 name: "malipo-mcp-server",
-                version: "1.0.0",
+                version: "1.1.0",
             },
             {
                 capabilities: {
@@ -88,6 +89,15 @@ export class MalipoServer {
             const { name, arguments: args } = request.params;
 
             try {
+                // Validate address overrides up front so a rejected host fails
+                // identically in mock and live mode, before any request is made.
+                const overrides = (args ?? {}) as Record<string, unknown>;
+                for (const key of ["address", "api_url"]) {
+                    if (typeof overrides[key] === "string" && overrides[key]) {
+                        resolveBaseUrl(overrides[key] as string);
+                    }
+                }
+
                 switch (name) {
                     case "get_token":
                         return await this.handleGetToken(GetTokenSchema.parse(args));
@@ -148,9 +158,16 @@ export class MalipoServer {
     // --- Handlers ---
 
     private async handleGetToken(args: any) {
-        const token = await this.authService.ensureToken(args.address);
+        const { token, expiresAt } = await this.authService.getTokenInfo(args.address);
+        const result: Record<string, unknown> = {
+            access_token: displayToken(token),
+            expires_at: new Date(expiresAt).toISOString(),
+        };
+        if (!config.EXPOSE_TOKEN) {
+            result.note = "Token is masked. The server attaches the full token to API calls itself; set MALIPO_EXPOSE_TOKEN=true to return it.";
+        }
         return {
-            content: [{ type: "text", text: JSON.stringify({ access_token: token }, null, 2) }],
+            content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };
     }
 
@@ -179,6 +196,13 @@ export class MalipoServer {
             ([key, value]) => `${JSON.stringify(key)}: ${this.canonicalJson(value)}`
         );
         return "{" + pairs.join(", ") + "}";
+    }
+
+    private signaturesMatch(expected: string, received: string): boolean {
+        const expectedBuf = Buffer.from(expected, "utf8");
+        const receivedBuf = Buffer.from(received, "utf8");
+        // timingSafeEqual throws on length mismatch, so check length first.
+        return expectedBuf.length === receivedBuf.length && timingSafeEqual(expectedBuf, receivedBuf);
     }
 
     private async handleCallback(args: any) {
@@ -218,8 +242,9 @@ export class MalipoServer {
                 const expected = createHmac("sha256", config.SECRET_KEY)
                     .update(canonicalBody)
                     .digest("hex");
-                const valid = expected === args.x_signature;
-                lines.push(`Expected signature: ${expected}`);
+                // Never echo the expected signature: that would let the caller forge
+                // valid signatures for arbitrary payloads using the merchant's secret.
+                const valid = this.signaturesMatch(expected, args.x_signature);
                 lines.push(`Signature valid: ${valid}`);
             } else {
                 lines.push("");
@@ -261,8 +286,17 @@ export class MalipoServer {
     }
 
     private async handleCreateDemoShop(args: any) {
+        // This tool sends a real payment push and creates a real plan, so it must
+        // never run against production.
+        if (!isMockMode && !isSandbox) {
+            return {
+                content: [{ type: "text", text: `create_demo_shop only runs in sandbox (MALIPO_ENVIRONMENT is "${config.ENVIRONMENT}"). It initiates a real payment and creates a real installment plan.` }],
+                isError: true,
+            };
+        }
+
         const results = [];
-        const address = args.api_url || config.API_BASE_URL;
+        const address = resolveBaseUrl(args.api_url);
 
         // 1. Get Token
         try {
@@ -271,7 +305,7 @@ export class MalipoServer {
                 step: "1. Authentication", 
                 action: "POST /accounts/request/token",
                 insight: "Tokens should be stored and reused until they expire (usually 1 hour).",
-                result: { access_token: token } 
+                result: { access_token: displayToken(token) } 
             });
         } catch (e: any) {
             results.push({ step: "Get Token", error: e.message });

@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getTunzaaClient = exports.MockTunzaaClient = exports.LiveTunzaaClient = void 0;
 const axios_1 = __importDefault(require("axios"));
 const config_js_1 = require("../config.js");
+const security_js_1 = require("../security.js");
 class LiveTunzaaClient {
     authService;
     constructor(authService) {
@@ -21,7 +22,7 @@ class LiveTunzaaClient {
     }
     getAxiosInstance(address) {
         return axios_1.default.create({
-            baseURL: address || config_js_1.config.API_BASE_URL,
+            baseURL: (0, security_js_1.resolveBaseUrl)(address),
         });
     }
     async initiatePayment(args) {

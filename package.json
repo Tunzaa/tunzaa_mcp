@@ -1,6 +1,6 @@
 {
   "name": "malipo_mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
@@ -18,13 +18,13 @@
   "license": "ISC",
   "description": "Malipo MCP server — AI grounding for the Malipo by Tunzaa payment and BNPL API.",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.0",
-    "axios": "^1.13.2",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "axios": "^1.20.0",
     "zod": "^3.25.76",
     "zod-to-json-schema": "^3.25.2"
   },
   "devDependencies": {
-    "@types/node": "^25.0.2",
+    "@types/node": "^25.9.8",
     "typescript": "^5.9.3"
   },
   "bin": {
