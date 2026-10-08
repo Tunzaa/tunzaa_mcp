@@ -1,0 +1,28 @@
+# Only dev may be promoted into the production branch (Tunzaa/whitelabel-api#301).
+# Required status check on master via the protect-production ruleset.
+name: Promote guard
+
+on:
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened, edited]
+
+permissions: {}
+
+jobs:
+  promote-guard:
+    name: promote-guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require head branch dev from this repo
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          THIS_REPO: ${{ github.repository }}
+        run: |
+          if [ "$HEAD_REF" != "dev" ] || [ "$HEAD_REPO" != "$THIS_REPO" ]; then
+            echo "::error::PRs into $BASE_REF must come from dev in $THIS_REPO (got $HEAD_REPO:$HEAD_REF)."
+            exit 1
+          fi
+          echo "Promotion from dev - OK"
