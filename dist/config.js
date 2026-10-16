@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isSandbox = exports.isMockMode = exports.config = void 0;
+exports.isCommerceMockMode = exports.isSandbox = exports.isMockMode = exports.config = void 0;
 const zod_1 = require("zod");
 const ConfigSchema = zod_1.z.object({
     API_KEY: zod_1.z.string().optional(),
@@ -9,6 +9,9 @@ const ConfigSchema = zod_1.z.object({
     API_BASE_URL: zod_1.z.string().default("https://pay.tunzaa.co.tz"),
     ALLOWED_HOSTS: zod_1.z.array(zod_1.z.string()).default([]),
     EXPOSE_TOKEN: zod_1.z.boolean().default(false),
+    COMMERCE_BASE_URL: zod_1.z.string().default("https://api.demo.tunzaa.co.tz"),
+    TENANT_ID: zod_1.z.string().default(""),
+    CURRENCY: zod_1.z.string().default("TZS"),
 });
 const splitList = (value) => (value || "").split(",").map(entry => entry.trim()).filter(Boolean);
 const rawConfig = {
@@ -18,10 +21,18 @@ const rawConfig = {
     API_BASE_URL: process.env.MALIPO_API_BASE_URL || process.env.TUNZAA_API_BASE_URL || "https://pay.tunzaa.co.tz",
     ALLOWED_HOSTS: splitList(process.env.MALIPO_ALLOWED_HOSTS || process.env.TUNZAA_ALLOWED_HOSTS),
     EXPOSE_TOKEN: (process.env.MALIPO_EXPOSE_TOKEN || process.env.TUNZAA_EXPOSE_TOKEN || "").toLowerCase() === "true",
+    COMMERCE_BASE_URL: process.env.MALIPO_COMMERCE_BASE_URL || process.env.TUNZAA_COMMERCE_BASE_URL || "https://api.demo.tunzaa.co.tz",
+    TENANT_ID: process.env.MALIPO_TENANT_ID || process.env.TUNZAA_TENANT_ID || "",
+    CURRENCY: process.env.MALIPO_CURRENCY || process.env.TUNZAA_CURRENCY || "TZS",
 };
 exports.config = ConfigSchema.parse(rawConfig);
 exports.isMockMode = !exports.config.API_KEY || !exports.config.SECRET_KEY;
 exports.isSandbox = exports.config.ENVIRONMENT.toLowerCase() === "sandbox";
+// Commerce (soko) tools run in mock mode until a tenant id is configured.
+exports.isCommerceMockMode = !exports.config.TENANT_ID;
+if (exports.isCommerceMockMode) {
+    console.warn("Notice: MALIPO_TENANT_ID not set. Commerce (soko) tools running in MOCK MODE and will return static example data.");
+}
 if (exports.isMockMode) {
     console.warn("Notice: MALIPO_API_KEY and/or MALIPO_SECRET_KEY not found. Server running in MOCK MODE. Tools will return static example data for the Malipo API.");
 }

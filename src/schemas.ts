@@ -70,3 +70,57 @@ export const DeleteInstallmentPlanSchema = z.object({
 export const CreateDemoShopSchema = z.object({
   api_url: z.string().optional().describe("Optional URL to simulate the Malipo environment for grounding."),
 });
+
+// --- Commerce (soko marketplace) ---
+
+export const SearchProductsSchema = z.object({
+  query: z.string().optional().describe("Free-text search over product names and descriptions. Omit or pass an empty string to list products."),
+  limit: z.number().int().positive().max(100).optional().describe("Max number of products to return (default server-side)."),
+  skip: z.number().int().min(0).optional().describe("Number of results to skip for pagination."),
+});
+
+export const GetProductSchema = z.object({
+  product_id: z.string().optional().describe("The product's unique id (UUID)."),
+  slug: z.string().optional().describe("The product's URL slug, as an alternative to product_id."),
+}).refine(data => !!(data.product_id || data.slug), {
+  message: "Provide either product_id or slug.",
+});
+
+export const CreateCartSchema = z.object({
+  session_id: z.string().optional().describe("Optional guest session id. A cart is created or fetched for it; a random one is generated if omitted. Reuse the returned cart_id for subsequent calls."),
+});
+
+export const AddToCartSchema = z.object({
+  cart_id: z.string().describe("The cart_id returned by create_cart."),
+  product_id: z.string().describe("The product to add (from search_products / get_product)."),
+  quantity: z.number().int().positive().default(1).describe("How many units to add."),
+  sku: z.string().optional().describe("Optional product variant SKU."),
+});
+
+export const ViewCartSchema = z.object({
+  cart_id: z.string().describe("The cart to inspect. Returns the cart contents and computed totals."),
+});
+
+export const ShippingAddressSchema = z.object({
+  first_name: z.string().describe("Buyer first name."),
+  last_name: z.string().describe("Buyer last name."),
+  phone: z.string().describe("Contact phone number (international format without '+', e.g. 255700000000)."),
+  address_line1: z.string().describe("Street address."),
+  city: z.string().describe("City."),
+  state_province: z.string().describe("State or province/region."),
+  country: z.string().describe("ISO country code, e.g. TZ."),
+  address_line2: z.string().optional().describe("Optional second address line."),
+  postal_code: z.string().optional().describe("Optional postal/ZIP code."),
+  email: z.string().optional().describe("Optional contact email."),
+});
+
+export const CreateOrderSchema = z.object({
+  cart_id: z.string().describe("The cart to convert into an order. Does NOT charge the buyer; use pay_order for that."),
+  shipping: ShippingAddressSchema.describe("Guest buyer shipping/contact details. A guest buyer account is provisioned from this."),
+  notes: z.string().optional().describe("Optional order notes."),
+});
+
+export const PayOrderSchema = z.object({
+  order_number: z.string().describe("The order to pay, from create_order."),
+  customer_msisdn: z.string().describe("Payer phone number for the Mobile Money push (e.g. 255700000000)."),
+});

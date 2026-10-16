@@ -15,10 +15,12 @@ const resources_js_1 = require("./resources.js");
 const config_js_1 = require("./config.js");
 const security_js_1 = require("./security.js");
 const schemas_js_1 = require("./schemas.js");
+const commerce_client_js_1 = require("./services/commerce.client.js");
 class MalipoServer {
     server;
     authService;
     client;
+    commerce;
     constructor() {
         this.server = new index_js_1.Server({
             name: "malipo-mcp-server",
@@ -31,6 +33,7 @@ class MalipoServer {
         });
         this.authService = new auth_service_js_1.AuthService();
         this.client = (0, tunzaa_client_js_1.getTunzaaClient)(this.authService);
+        this.commerce = (0, commerce_client_js_1.getCommerceClient)();
         this.setupHandlers();
         this.setupErrorHandling();
     }
@@ -93,6 +96,20 @@ class MalipoServer {
                         return await this.handleDeleteInstallmentPlan(schemas_js_1.DeleteInstallmentPlanSchema.parse(args));
                     case "create_demo_shop":
                         return await this.handleCreateDemoShop(schemas_js_1.CreateDemoShopSchema.parse(args));
+                    case "search_products":
+                        return await this.jsonResult(this.commerce.searchProducts(schemas_js_1.SearchProductsSchema.parse(args)));
+                    case "get_product":
+                        return await this.jsonResult(this.commerce.getProduct(schemas_js_1.GetProductSchema.parse(args)));
+                    case "create_cart":
+                        return await this.jsonResult(this.commerce.createCart(schemas_js_1.CreateCartSchema.parse(args)));
+                    case "add_to_cart":
+                        return await this.jsonResult(this.commerce.addToCart(schemas_js_1.AddToCartSchema.parse(args)));
+                    case "view_cart":
+                        return await this.jsonResult(this.commerce.viewCart(schemas_js_1.ViewCartSchema.parse(args)));
+                    case "create_order":
+                        return await this.jsonResult(this.commerce.createOrder(schemas_js_1.CreateOrderSchema.parse(args)));
+                    case "pay_order":
+                        return await this.jsonResult(this.commerce.payOrder(schemas_js_1.PayOrderSchema.parse(args)));
                     default:
                         throw new types_js_1.McpError(types_js_1.ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
                 }
@@ -127,6 +144,11 @@ class MalipoServer {
         };
     }
     // --- Handlers ---
+    /** Awaits a client call and wraps its result as pretty-printed JSON text. */
+    async jsonResult(promise) {
+        const result = await promise;
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
     async handleGetToken(args) {
         const { token, expiresAt } = await this.authService.getTokenInfo(args.address);
         const result = {

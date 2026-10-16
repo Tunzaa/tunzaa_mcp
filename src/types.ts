@@ -72,3 +72,55 @@ export interface DeleteInstallmentRequest {
 export interface DemoShopRequest {
     api_url?: string;
 }
+
+// --- Commerce (soko marketplace) ---
+
+export interface SearchProductsRequest {
+    query?: string;
+    limit?: number;
+    skip?: number;
+}
+
+export interface GetProductRequest {
+    product_id?: string;
+    slug?: string;
+}
+
+export interface CreateCartRequest {
+    session_id?: string;
+}
+
+export interface AddToCartRequest {
+    cart_id: string;
+    product_id: string;
+    quantity: number;
+    sku?: string;
+}
+
+export interface ViewCartRequest {
+    cart_id: string;
+}
+
+export interface CommerceShippingAddress {
+    first_name: string;
+    last_name: string;
+    phone: string;
+    address_line1: string;
+    city: string;
+    state_province: string;
+    country: string;
+    address_line2?: string;
+    postal_code?: string;
+    email?: string;
+}
+
+export interface CreateOrderRequest {
+    cart_id: string;
+    shipping: CommerceShippingAddress;
+    notes?: string;
+}
+
+export interface PayOrderRequest {
+    order_number: string;
+    customer_msisdn: string;
+}
