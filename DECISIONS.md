@@ -57,3 +57,35 @@ buyers, human-approved payment. Marketplace backend is
   - `pay_order` on a nonexistent order → 404, **no charge**
 - `pay_order` happy path: verified live on demo (payments are sandboxed there) —
   order paid, `202 Sandbox payment request accepted`, transaction id returned.
+
+## Remote HTTP transport for Claude connector — issue #9
+
+Context: run the server as a Claude.ai org connector. Connectors are remote MCP
+servers (public HTTPS URL, Streamable HTTP); the server was stdio-only.
+
+### Chosen
+- **Second entrypoint `src/http.ts`** using the SDK's
+  `StreamableHTTPServerTransport`; `index.ts` (stdio) is unchanged. One
+  `MalipoServer` per MCP session, kept in a session map.
+- **Node's built-in `http`**, no express/framework — keeps deps lean (only the
+  SDK, already present).
+- **Bearer guard**: if `MCP_AUTH_TOKEN` is set, every `/mcp` request must send
+  `Authorization: Bearer <token>`; if unset, the endpoint is unauthenticated and
+  logs a warning (local only). Safe-by-default for a public endpoint; no per-user
+  OAuth (demo-only scope).
+- **Demo-only single tenant**: deployment pins `MALIPO_TENANT_ID` to the demo
+  tenant; payment/installment tools stay in mock (no API keys set).
+- **SIGINT registration made idempotent** (module-level flag) so the per-session
+  server instances don't leak process listeners.
+- **Dockerfile** (multi-stage, non-root `node` user) for deployment; host TBD.
+
+### Rejected / deferred
+- Per-user OAuth + multi-tenant routing — out of scope (demo-only).
+- Stateless per-request transport — rejected; session map keeps follow-up
+  requests on the same server instance.
+
+### Tested
+- Build clean. Live HTTP smoke test: initialize + `list_tools` (17) +
+  `search_products` against the demo returned data; a request without the bearer
+  token returned HTTP 401; `/health` returns 200.
+- Not yet deployed (awaiting host).

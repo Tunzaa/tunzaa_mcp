@@ -17,6 +17,7 @@ const security_js_1 = require("./security.js");
 const schemas_js_1 = require("./schemas.js");
 const commerce_client_js_1 = require("./services/commerce.client.js");
 class MalipoServer {
+    static sigintRegistered = false;
     server;
     authService;
     client;
@@ -121,10 +122,15 @@ class MalipoServer {
     }
     setupErrorHandling() {
         this.server.onerror = (error) => console.error("[MCP Error]", error);
-        process.on("SIGINT", async () => {
-            await this.server.close();
-            process.exit(0);
-        });
+        // Register the SIGINT handler only once per process. The HTTP transport
+        // creates one MalipoServer per session, so registering here every time
+        // would leak process listeners.
+        if (!MalipoServer.sigintRegistered) {
+            MalipoServer.sigintRegistered = true;
+            process.on("SIGINT", () => {
+                process.exit(0);
+            });
+        }
     }
     formatError(error) {
         if (axios_1.default.isAxiosError(error)) {
@@ -346,7 +352,6 @@ class MalipoServer {
     }
     async run(transport) {
         await this.server.connect(transport);
-        console.error("Malipo MCP Server running on stdio");
     }
 }
 exports.MalipoServer = MalipoServer;

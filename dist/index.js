@@ -5,7 +5,9 @@ const stdio_js_1 = require("@modelcontextprotocol/sdk/server/stdio.js");
 const server_js_1 = require("./server.js");
 const server = new server_js_1.MalipoServer();
 const transport = new stdio_js_1.StdioServerTransport();
-server.run(transport).catch((error) => {
+server.run(transport)
+    .then(() => console.error("Malipo MCP Server running on stdio"))
+    .catch((error) => {
     console.error("Fatal error running Malipo MCP Server:", error);
     process.exit(1);
 });
