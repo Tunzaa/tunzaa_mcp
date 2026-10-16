@@ -37,6 +37,7 @@ import {
 import { ICommerceClient, getCommerceClient } from "./services/commerce.client.js";
 
 export class MalipoServer {
+    private static sigintRegistered = false;
     private server: Server;
     private authService: AuthService;
     private client: ITunzaaClient;
@@ -155,10 +156,15 @@ export class MalipoServer {
     private setupErrorHandling() {
         this.server.onerror = (error) => console.error("[MCP Error]", error);
 
-        process.on("SIGINT", async () => {
-            await this.server.close();
-            process.exit(0);
-        });
+        // Register the SIGINT handler only once per process. The HTTP transport
+        // creates one MalipoServer per session, so registering here every time
+        // would leak process listeners.
+        if (!MalipoServer.sigintRegistered) {
+            MalipoServer.sigintRegistered = true;
+            process.on("SIGINT", () => {
+                process.exit(0);
+            });
+        }
     }
 
     private formatError(error: any) {
@@ -403,6 +409,5 @@ export class MalipoServer {
 
     async run(transport: any) {
         await this.server.connect(transport);
-        console.error("Malipo MCP Server running on stdio");
     }
 }

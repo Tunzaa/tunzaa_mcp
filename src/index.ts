@@ -6,7 +6,9 @@ import { MalipoServer } from "./server.js";
 const server = new MalipoServer();
 const transport = new StdioServerTransport();
 
-server.run(transport).catch((error) => {
-    console.error("Fatal error running Malipo MCP Server:", error);
-    process.exit(1);
-});
+server.run(transport)
+    .then(() => console.error("Malipo MCP Server running on stdio"))
+    .catch((error) => {
+        console.error("Fatal error running Malipo MCP Server:", error);
+        process.exit(1);
+    });
